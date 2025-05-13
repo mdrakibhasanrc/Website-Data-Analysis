@@ -129,55 +129,55 @@ from metric_calc m, bounce_rate_calc b, session_duration s;
 
 ### 🔑 Key Insights:
 
-   1. Strong Product View Engagement
-      
-         22.7% of total users viewed product pages.
-      
-         However, 77.3% of users dropped off after landing (after_page_abandonment_rate).
-      
-         🔍 Insight: High homepage or landing page drop-off — consider improving above-the-fold content, page load speed, or value proposition clarity.
-   
-   3. Add-to-Cart Rate Looks Healthy
-      
-         20.48% of users who stayed added items to the cart
-      
-         This suggests interest in products is strong once users engage.
-   
-   4. Cart and Checkout Abandonment Needs Attention
-      
-         Cart Abandonment Rate: 77.44%
-      
-         Checkout Abandonment Rate: 45.49%
-      
-         🔍 Insight: These are higher than industry benchmarks.
-   
-   6. Purchase Conversion Rate
-      
-         22.56% (this seems high — please confirm if this is of users who entered checkout or all users).
-      
-         If it's based on all users, this is excellent and shows strong bottom-funnel performance.
-   
-   8. Revenue Metrics
-      
-         Total Revenue: $362,165
-      
-         AOV (Average Order Value): $81.96
-      
-         ARPU (Average Revenue Per User): $1.34
-      
-         🔍 Insight:
-      
-         High AOV suggests successful upselling or higher-ticket products.
-      
-         ARPU is low relative to AOV → Opportunity to improve conversion rate or retention to lift ARPU.
-   
-   10. Site Engagement
-       
-         Bounce Rate: 32.82% → Fairly good (under 40% is healthy).
-       
-         Average Session Duration: ~70 seconds → Suggests users are exploring but might not be deeply engaging.
-       
-         🔍 Insight: Could experiment with personalized recommendations, better CTAs, or product discovery paths.
+         1. Strong Product View Engagement
+            
+               22.7% of total users viewed product pages.
+            
+               However, 77.3% of users dropped off after landing (after_page_abandonment_rate).
+            
+               🔍 Insight: High homepage or landing page drop-off — consider improving above-the-fold content, page load speed, or value proposition clarity.
+         
+         3. Add-to-Cart Rate Looks Healthy
+            
+               20.48% of users who stayed added items to the cart
+            
+               This suggests interest in products is strong once users engage.
+         
+         4. Cart and Checkout Abandonment Needs Attention
+            
+               Cart Abandonment Rate: 77.44%
+            
+               Checkout Abandonment Rate: 45.49%
+            
+               🔍 Insight: These are higher than industry benchmarks.
+         
+         6. Purchase Conversion Rate
+            
+               22.56% (this seems high — please confirm if this is of users who entered checkout or all users).
+            
+               If it's based on all users, this is excellent and shows strong bottom-funnel performance.
+         
+         8. Revenue Metrics
+            
+               Total Revenue: $362,165
+            
+               AOV (Average Order Value): $81.96
+            
+               ARPU (Average Revenue Per User): $1.34
+            
+               🔍 Insight:
+            
+               High AOV suggests successful upselling or higher-ticket products.
+            
+               ARPU is low relative to AOV → Opportunity to improve conversion rate or retention to lift ARPU.
+         
+         10. Site Engagement
+             
+               Bounce Rate: 32.82% → Fairly good (under 40% is healthy).
+             
+               Average Session Duration: ~70 seconds → Suggests users are exploring but might not be deeply engaging.
+             
+               🔍 Insight: Could experiment with personalized recommendations, better CTAs, or product discovery paths.
 
 ## 🎯 Summary Key Findings:
 

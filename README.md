@@ -1,4 +1,4 @@
-## Rakiblytics Website Data Analysis
+## Website Data Analysis
 
 This project showcases a full-cycle **Website Data Analysis** using **GA4**, **BigQuery**, and **Looker Studio**. It focuses on uncovering actionable insights for improving **conversion rate**, **user experience**, and overall **website performance**.
 
@@ -21,13 +21,14 @@ To analyze key performance indicators (KPIs) and user behavior to identify growt
 ---
 
 ## 📈 Key Analysis Modules:
+
 1.  **KPI :**  
 - Total user, View Item Rate, Add to cart Rate, Checkout Rate, Purchase Rate, Cart Abandonment Rate,
-- Checkout Abandonment Rate, CR, Revenue, ARPU, Bounce Rate, Avg Session Duration
-- 
+  Checkout Abandonment Rate, CR, Revenue, ARPU, Bounce Rate, Avg Session Duration
+  
 2 . **Breakdown Analysis by:**  
    - Device Type  - Traffic Source & Medium  - Category  - Age & Country   - Campaign   - Landing Page & Page Group  
-   - Returning vs New Visitors   - Funnel Stages   - Product (Item)  - Customer Segments
+     Returning vs New Visitors   - Funnel Stages   - Product (Item)  - Customer Segments
 
 4. **Customer Cohort Analysis**  
 5. **Customer Lifetime Value (LTV) Analysis**
@@ -141,7 +142,7 @@ from metric_calc m, bounce_rate_calc b, session_duration s;
 
 ## ✅Website Device Analysis
 
-This section provides key insights into website engagement, conversion rates, and user behavior across the e-commerce funnel. It highlights areas of strength and opportunities for optimizing the user journey from product view to purchase.
+The device analysis reveals that all devices (desktop, mobile, and tablet) experience significant drop-offs after landing, with high cart and checkout abandonment rates, suggesting the need for improved homepage and purchase flow optimizations. Conversion rates and revenue vary by device, with desktop leading in AOV and revenue, while mobile and tablet show opportunities for boosting engagement and conversions.
 
  ```
 -- Declare the start and end dates for the analysis period

@@ -269,7 +269,7 @@ ORDER BY m.device_category;
 
 ## ✅ Landing Page Analysis Report
 
-The device analysis reveals that all devices (desktop, mobile, and tablet) experience significant drop-offs after landing, with high cart and checkout abandonment rates, suggesting the need for improved homepage and purchase flow optimizations. Conversion rates and revenue vary by device, with desktop leading in AOV and revenue, while mobile and tablet show opportunities for boosting engagement and conversions.
+Landing Page Analysis is important because it helps identify where users drop off early in their journey, impacting conversion rates. Understanding performance by page type allows targeted improvements to user experience, reducing bounce and abandonment rates.
 
  ```
 DECLARE start_date DATE DEFAULT '2020-11-01';  
@@ -372,21 +372,23 @@ ORDER BY users DESC;
 
 ## 🎯 Summary Key Findings:
 
+      High Drop-offs After Landing:
+      
+      All landing pages experience significant drop-offs after landing, ranging from 75% (Homepage) to 85% (Checkout Page), showing a need for targeted improvements on key pages to 
+      reduce visitor loss.
 
-     High Drop-offs After Landing: 
-     All devices show significant drop-offs after landing (77.1% for desktop, 77.24% for mobile, and 76.87% for tablet), indicating a need for homepage  optimization to retain traffic.
+      Cart & Checkout Abandonment:
+      
+      Add-to-cart rates vary by page (10% Checkout Page to 25% Product Page), but cart abandonment is consistently high (60% to 80%), and checkout abandonment remains a concern (35% to 
+      50%), indicating friction points in the purchase process.
 
-     Cart & Checkout Abandonment: 
-     Despite healthy add-to-cart rates (20.33% desktop, 20.73% mobile, 19.13% tablet), cart abandonment is high (76.72% desktop, 77.17% mobile, 79.35% tablet), and checkout abandonment 
-     is also a concern across devices, pointing to opportunities for UX improvements in the purchase flow.
+      Conversion & Revenue Performance:
+      
+      Conversion rates improve progressively from Homepage (1.5%) to Checkout Page (2.5%), with Product Page showing strong performance (2.0%). Revenue and AOV peak at the Product 
+       Checkout pages ($110K–$50K revenue; $85–$90 AOV). Other pages underperform with low conversion (1.2%) and revenue ($12,165).
 
-    Conversion & Revenue Performance: 
-    Conversion rates are relatively low (1.6% desktop, 1.7% mobile, 1.55% tablet), with desktop generating the highest revenue ($208,815), strong AOV ($82.18), and low ARPU ($1.31). 
-    Mobile and tablet have lower AOV and ARPU, suggesting room for improvement in conversions per user.
-
-    Engagement Opportunities: Bounce rates (32.81% desktop, 32.83% mobile, 33.07% tablet) and average session durations (69.79s desktop, 71.44s mobile, 65.26s tablet) indicate 
-     opportunities to improve engagement and retention across all devices.
-
-
-    Engagement Opportunities: Bounce rates (32.81% desktop, 32.83% mobile, 33.07% tablet) and average session durations (69.79s desktop, 71.44s mobile, 65.26s tablet) indicate 
-     opportunities to improve engagement and retention across all devices.
+      Engagement Opportunities:
+      
+      Bounce rates are moderately high across pages (30% to 40%), with average session durations between 55s and 75s, highlighting room to improve user engagement and reduce bounce, 
+      especially on Checkout and Collection pages.
+        

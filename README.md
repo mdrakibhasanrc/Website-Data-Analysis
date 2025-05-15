@@ -265,5 +265,128 @@ ORDER BY m.device_category;
     Conversion rates are relatively low (1.6% desktop, 1.7% mobile, 1.55% tablet), with desktop generating the highest revenue ($208,815), strong AOV ($82.18), and low ARPU ($1.31). 
     Mobile and tablet have lower AOV and ARPU, suggesting room for improvement in conversions per user.
 
+
+
+## ✅ Landing Page Analysis Report
+
+The device analysis reveals that all devices (desktop, mobile, and tablet) experience significant drop-offs after landing, with high cart and checkout abandonment rates, suggesting the need for improved homepage and purchase flow optimizations. Conversion rates and revenue vary by device, with desktop leading in AOV and revenue, while mobile and tablet show opportunities for boosting engagement and conversions.
+
+ ```
+DECLARE start_date DATE DEFAULT '2020-11-01';  
+DECLARE end_date DATE DEFAULT '2021-01-31';
+
+WITH base AS (
+  SELECT 
+    user_pseudo_id,
+    event_name,
+    event_timestamp,
+    CONCAT(user_pseudo_id, (SELECT value.int_value FROM UNNEST(event_params) WHERE key = 'ga_session_id')) AS session_id,
+    (SELECT value.int_value FROM UNNEST(event_params) WHERE key = 'engagement_time_msec') AS engagement_time_msec,
+    (SELECT value.string_value FROM UNNEST(event_params) WHERE key = 'session_engaged') AS session_engaged,
+    ecommerce.purchase_revenue AS revenue
+  FROM `bigquery-public-data.ga4_obfuscated_sample_ecommerce.events_*`
+  WHERE PARSE_DATE('%Y%m%d', event_date) BETWEEN start_date AND end_date
+),
+
+landing_pages AS (
+  SELECT
+    session_id,
+    user_pseudo_id,
+    (SELECT value.string_value FROM UNNEST(event_params) WHERE key = 'page_location') AS landing_page_url,
+    event_timestamp
+  FROM base
+  WHERE event_name = 'page_view'
+  QUALIFY ROW_NUMBER() OVER (PARTITION BY session_id ORDER BY event_timestamp) = 1
+),
+
+landing_page_types AS (
+  SELECT
+    session_id,
+    user_pseudo_id,
+    CASE
+      WHEN REGEXP_CONTAINS(landing_page_url, r'/collections') THEN 'collection page'
+      WHEN REGEXP_CONTAINS(landing_page_url, r'/products') THEN 'product page'
+      WHEN REGEXP_CONTAINS(landing_page_url, r'/checkout') THEN 'checkout page'
+      WHEN REGEXP_CONTAINS(landing_page_url, r'/home') THEN 'homepage'
+      ELSE 'other'
+    END AS landing_page_type
+  FROM landing_pages
+),
+
+base_with_landing AS (
+  SELECT b.*, l.landing_page_type
+  FROM base b
+  LEFT JOIN landing_page_types l
+  USING (session_id, user_pseudo_id)
+),
+
+metrics_by_landing AS (
+  SELECT
+    landing_page_type,
+    COUNT(DISTINCT user_pseudo_id) AS users,
+    COUNT(DISTINCT CASE WHEN event_name='page_view' THEN user_pseudo_id END) AS page_view_users,
+    COUNT(DISTINCT CASE WHEN event_name='view_item' THEN user_pseudo_id END) AS view_item_users,
+    COUNT(DISTINCT CASE WHEN event_name='add_to_cart' THEN user_pseudo_id END) AS add_to_cart_users,
+    COUNT(DISTINCT CASE WHEN event_name='begin_checkout' THEN user_pseudo_id END) AS begin_checkout_users,
+    COUNT(DISTINCT CASE WHEN event_name='purchase' THEN user_pseudo_id END) AS purchase_users,
+    COUNT(DISTINCT session_id) AS total_sessions,
+    COUNT(DISTINCT CASE WHEN session_engaged='1' THEN session_id END) AS engaged_sessions,
+    SUM(revenue) AS revenue,
+    SUM(engagement_time_msec) AS total_engagement_time
+  FROM base_with_landing
+  GROUP BY landing_page_type
+)
+
+SELECT
+  landing_page_type,
+  users,
+  ROUND(SAFE_DIVIDE(view_item_users, NULLIF(page_view_users, 0)) * 100, 2) AS view_rate,
+  ROUND((1 - SAFE_DIVIDE(view_item_users, NULLIF(page_view_users, 0))) * 100, 2) AS after_page_abandonment_rate,
+  
+  ROUND(SAFE_DIVIDE(add_to_cart_users, NULLIF(view_item_users, 0)) * 100, 2) AS add_to_cart_rate,
+  ROUND((1 - SAFE_DIVIDE(add_to_cart_users, NULLIF(view_item_users, 0))) * 100, 2) AS after_view_abandonment_rate,
+
+  ROUND(SAFE_DIVIDE(begin_checkout_users, NULLIF(add_to_cart_users, 0)) * 100, 2) AS checkout_rate,
+  ROUND((1 - SAFE_DIVIDE(begin_checkout_users, NULLIF(add_to_cart_users, 0))) * 100, 2) AS cart_abandonment_rate,
+
+  ROUND(SAFE_DIVIDE(purchase_users, NULLIF(begin_checkout_users, 0)) * 100, 2) AS purchase_rate,
+  ROUND((1 - SAFE_DIVIDE(purchase_users, NULLIF(begin_checkout_users, 0))) * 100, 2) AS checkout_abandonment_rate,
+
+  ROUND(SAFE_DIVIDE(revenue, NULLIF(purchase_users, 0)), 2) AS AOV,
+  ROUND(SAFE_DIVIDE(revenue, NULLIF(users, 0)), 2) AS ARPU,
+  ROUND(SAFE_DIVIDE(purchase_users, NULLIF(users, 0)) * 100, 2) AS conversion_rate,
+  ROUND(SAFE_DIVIDE(total_sessions - engaged_sessions, NULLIF(total_sessions, 0)) * 100, 2) AS bounce_rate,
+  ROUND(SAFE_DIVIDE(total_engagement_time, 1000 * NULLIF(total_sessions, 0)), 2) AS avg_session_duration_sec
+
+FROM metrics_by_landing
+ORDER BY users DESC;
+
+
+ ```
+## 🎯 Result:
+![Screenshot_1](https://github.com/user-attachments/assets/d607451e-9e5f-47ee-99c0-52b8d6eda13f)
+
+![Screenshot_2](https://github.com/user-attachments/assets/1fdf30f4-278e-4322-85a5-316a91974a2c)
+
+
+
+## 🎯 Summary Key Findings:
+
+
+     High Drop-offs After Landing: 
+     All devices show significant drop-offs after landing (77.1% for desktop, 77.24% for mobile, and 76.87% for tablet), indicating a need for homepage  optimization to retain traffic.
+
+     Cart & Checkout Abandonment: 
+     Despite healthy add-to-cart rates (20.33% desktop, 20.73% mobile, 19.13% tablet), cart abandonment is high (76.72% desktop, 77.17% mobile, 79.35% tablet), and checkout abandonment 
+     is also a concern across devices, pointing to opportunities for UX improvements in the purchase flow.
+
+    Conversion & Revenue Performance: 
+    Conversion rates are relatively low (1.6% desktop, 1.7% mobile, 1.55% tablet), with desktop generating the highest revenue ($208,815), strong AOV ($82.18), and low ARPU ($1.31). 
+    Mobile and tablet have lower AOV and ARPU, suggesting room for improvement in conversions per user.
+
+    Engagement Opportunities: Bounce rates (32.81% desktop, 32.83% mobile, 33.07% tablet) and average session durations (69.79s desktop, 71.44s mobile, 65.26s tablet) indicate 
+     opportunities to improve engagement and retention across all devices.
+
+
     Engagement Opportunities: Bounce rates (32.81% desktop, 32.83% mobile, 33.07% tablet) and average session durations (69.79s desktop, 71.44s mobile, 65.26s tablet) indicate 
      opportunities to improve engagement and retention across all devices.

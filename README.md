@@ -40,91 +40,89 @@ To analyze key performance indicators (KPIs) and user behavior to identify growt
 This section provides key insights into website engagement, conversion rates, and user behavior across the e-commerce funnel. It highlights areas of strength and opportunities for optimizing the user journey from product view to purchase.
 
  ```
--- Declare the start and end dates for the analysis period
+ -- Declare the start and end dates for the analysis period
 declare start_date date default '2020-11-01';  
 declare end_date date default '2021-01-31';
-
-with base as (
-  SELECT 
+ 
+ with flat_data as (
+  SELECT  
     user_pseudo_id,
     event_name,
-    concat(user_pseudo_id,(select value.int_value from unnest(event_params) where key ='ga_session_id')) as session_id,
-    (select value.int_value from unnest (event_params) where key='engagement_time_msec') as engagement_time_msec,
     event_date,
-    (select value.string_value from unnest (event_params) where key ='session_engaged') as session_engaged,
-    ecommerce.purchase_revenue AS revenue
+    concat(user_pseudo_id,(select value.int_value from unnest(event_params) where key='ga_session_id')) as session_id,
+    (select value.string_value from unnest(event_params) where key='session_engaged') as session_engaged,
+    (select value.int_value from unnest (event_params) where key ='engagement_time_msec') as engagment_time_mesc,
+    ecommerce.purchase_revenue as revenue
 
 FROM `bigquery-public-data.ga4_obfuscated_sample_ecommerce.events_*`
 where parse_date('%Y%m%d', event_date) between start_date and end_date
-),
+ ),
 
 metric as (
-  select
-      count(distinct user_pseudo_id) as total_users,
-      count(distinct case when event_name='page_view' then user_pseudo_id end) as page_view_users,
-      count(distinct case when event_name='view_item' then user_pseudo_id end) as view_item_users,
-      count(distinct case when event_name='add_to_cart' then user_pseudo_id end) as add_to_cart_users,
-      count(distinct case when event_name='begin_checkout' then user_pseudo_id end) as begin_checkout_users,
-      count(distinct case when event_name='purchase' then user_pseudo_id end) as purchase_users,
-      sum(revenue) as total_revenue
-  from base
+ select
+     count(distinct user_pseudo_id) as total_users,
+     count(distinct case when event_name='page_view' then user_pseudo_id end) as page_view,
+     count(distinct case when event_name='view_item' then user_pseudo_id end) as view_item,
+     count(distinct case when event_name='add_to_cart' then user_pseudo_id end) as add_to_cart,
+     count(distinct case when event_name='begin_checkout' then user_pseudo_id end) as begin_checkout,
+     count(distinct case when event_name='purchase' then user_pseudo_id end) as purchase,
+     sum(revenue) as total_revenue
+ from flat_data
 ),
- metric_calc as (
-      select
-       total_users as users,
 
-       round(safe_divide(view_item_users,nullif(page_view_users,0))*100,2) as view_rate,
-       round((1 - safe_divide(view_item_users, nullif(page_view_users, 0))) * 100, 2) as afetr_page_abandonment_rate,
+metric_cal as (
+        select
+            total_users,
+            round(safe_divide(view_item,nullif(page_view,0))*100,2) as view_rate,
+            100-round(safe_divide(view_item,nullif(page_view,0))*100,2) as drop_lp_product_page,
 
-       round(safe_divide(add_to_cart_users,nullif(view_item_users,0))*100,2) as add_to_cart_rate,
-       round((1 - safe_divide(add_to_cart_users, nullif(view_item_users, 0))) * 100, 2) as after_view_abandonment_rate,
+            round(safe_divide(add_to_cart,nullif(view_item,0))*100,2) as add_to_cart_rate,
+            100- round(safe_divide(add_to_cart,nullif(view_item,0))*100,2) as drop_product_cart,
 
-       round(safe_divide(begin_checkout_users,nullif(add_to_cart_users,0))*100,2) as checkout_rate,
-       round((1 - safe_divide(begin_checkout_users, nullif(add_to_cart_users, 0))) * 100, 2) as cart_abandonment_rate,
-       
+            round(safe_divide(begin_checkout,nullif(add_to_cart,0))*100,2) as checkout_rate,
+            100-round(safe_divide(begin_checkout,nullif(add_to_cart,0))*100,2) as drop_cart_checkout,
 
-       round(safe_divide(purchase_users,nullif(begin_checkout_users,0))*100,2) as purchase_rate,
-       round((1 - safe_divide(purchase_users, nullif(begin_checkout_users, 0))) * 100, 2) as checkout_abandonment_rate,
-      
-       total_revenue as revenue,
-       round(safe_divide(total_revenue,nullif(purchase_users,0)),2) as AOV,
-       round(safe_divide(total_revenue,total_users),2) as ARPU,
+            round(safe_divide(purchase,nullif(begin_checkout,0))*100,2) as purchase_rate,
+            100 - round(safe_divide(purchase,nullif(begin_checkout,0))*100,2) as drop_checkout_purchase,
 
-       round(safe_divide(purchase_users,nullif(total_users,0))*100,2) as conversion_rate,
+            round(safe_divide(purchase,nullif(total_users,0))*100,2) as conversion_rate,
 
-from metric
- ),
+            total_revenue,
 
- bounce_rate_calc as (
-      select
-         round(safe_divide(count(distinct session_id)-count(distinct case when session_engaged='1' then session_id end),
-         count(distinct session_id))*100,2) as bounce_rate
-    from base
- ),
+            round(safe_divide(total_revenue,nullif(purchase,0)),2) as AOV,
 
- session_duration as (
-  select
-    safe_divide(sum(engagement_time_msec), 1000 * count(distinct session_id)) as avg_session_duration_sec
-  from base
+            safe_divide(total_revenue,nullif(total_users,0)) as ARPU
+
+      from metric
+
+),
+
+bounce_session_duration as (
+    select
+       round(safe_divide(count(distinct session_id)-count(distinct case when session_engaged='1' then session_id end), 
+        count(distinct session_id))*100,2) as bounce_rate,
+
+       safe_divide(sum(engagment_time_mesc), 1000 * count(distinct session_id)) as avg_session_duration_sec
+from flat_data
 )
 
 select
-    m.users,
-    m.view_rate,
-    m.afetr_page_abandonment_rate,
-    m.add_to_cart_rate,
-    m.checkout_rate,
-    m.cart_abandonment_rate,
-    m.purchase_rate,
-    m.checkout_abandonment_rate,
-    m.revenue,
-    m.AOV,
-    m.ARPU,
-    m.conversion_rate,
-    b.bounce_rate,
-    s.avg_session_duration_sec
-  
-from metric_calc m, bounce_rate_calc b, session_duration s;
+   m.total_users,
+   m.view_rate,
+   m.drop_lp_product_page,
+   m.add_to_cart_rate,
+   m.drop_product_cart,
+   m.checkout_rate,
+   m.drop_cart_checkout,
+   m.purchase_rate,
+   m.drop_checkout_purchase,
+   m.conversion_rate,
+   m.AOV,
+   m.ARPU,
+   b.bounce_rate,
+   b.avg_session_duration_sec
+
+from metric_cal m, bounce_session_duration b;
 
  ```
 
@@ -254,17 +252,20 @@ ORDER BY m.device_category;
 ## 🎯 Summary Key Findings:
 
 
-     High Drop-offs After Landing: 
-     All devices show significant drop-offs after landing (77.1% for desktop, 77.24% for mobile, and 76.87% for tablet), indicating a need for homepage  optimization to retain traffic.
+    Traffic & Engagement:
+    270,154 total users with a bounce rate of 32.82% and avg. session duration of 70 sec, indicating weak user engagement
+    and low time spent exploring the site.
 
-     Cart & Checkout Abandonment: 
-     Despite healthy add-to-cart rates (20.33% desktop, 20.73% mobile, 19.13% tablet), cart abandonment is high (76.72% desktop, 77.17% mobile, 79.35% tablet), and checkout abandonment 
-     is also a concern across devices, pointing to opportunities for UX improvements in the purchase flow.
+    Funnel Drop-offs:
+    High drop-off at each stage — 77.3% from landing to product page, 79.52% from product to cart, 77.44% from cart to checkout, 
+    and 54.51% from checkout to purchase — showing major friction throughout the funnel.
 
-    Conversion & Revenue Performance: 
-    Conversion rates are relatively low (1.6% desktop, 1.7% mobile, 1.55% tablet), with desktop generating the highest revenue ($208,815), strong AOV ($82.18), and low ARPU ($1.31). 
-    Mobile and tablet have lower AOV and ARPU, suggesting room for improvement in conversions per user.
+    Conversion & Purchase Behavior:
+    Final conversion rate is only 1.64%, reflecting the cumulative impact of drop-offs; purchase rate is 45.49% of users who 
+    reach checkout, suggesting room for checkout process improvements.
 
+    Revenue Metrics:
+     Despite a strong AOV of $81.96, the ARPU is just $1.34, meaning low conversion efficiency is severely limiting revenue per user.
 
 
 ## ✅ Landing Page Analysis Report

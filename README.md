@@ -126,6 +126,13 @@ from metric_cal m, bounce_session_duration b;
 
  ```
 
+## 🎯 Query Result:
+
+![Screenshot_5](https://github.com/user-attachments/assets/ad6d3573-adb9-4ef2-918b-bc991a9352e4)
+
+![Screenshot_6](https://github.com/user-attachments/assets/05f959e7-c973-489a-828d-6c48858298ed)
+
+
 ## 🎯 Summary Key Findings:
 
 

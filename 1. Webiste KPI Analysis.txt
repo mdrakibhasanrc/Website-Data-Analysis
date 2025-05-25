@@ -1,0 +1,83 @@
+ -- Declare the start and end dates for the analysis period
+declare start_date date default '2020-11-01';  
+declare end_date date default '2021-01-31';
+ 
+ with flat_data as (
+  SELECT  
+    user_pseudo_id,
+    event_name,
+    event_date,
+    concat(user_pseudo_id,(select value.int_value from unnest(event_params) where key='ga_session_id')) as session_id,
+    (select value.string_value from unnest(event_params) where key='session_engaged') as session_engaged,
+    (select value.int_value from unnest (event_params) where key ='engagement_time_msec') as engagment_time_mesc,
+    ecommerce.purchase_revenue as revenue
+
+FROM `bigquery-public-data.ga4_obfuscated_sample_ecommerce.events_*`
+where parse_date('%Y%m%d', event_date) between start_date and end_date
+ ),
+
+metric as (
+ select
+     count(distinct user_pseudo_id) as total_users,
+     count(distinct case when event_name='page_view' then user_pseudo_id end) as page_view,
+     count(distinct case when event_name='view_item' then user_pseudo_id end) as view_item,
+     count(distinct case when event_name='add_to_cart' then user_pseudo_id end) as add_to_cart,
+     count(distinct case when event_name='begin_checkout' then user_pseudo_id end) as begin_checkout,
+     count(distinct case when event_name='purchase' then user_pseudo_id end) as purchase,
+     sum(revenue) as total_revenue
+ from flat_data
+),
+
+metric_cal as (
+        select
+            total_users,
+            round(safe_divide(view_item,nullif(page_view,0))*100,2) as view_rate,
+            100-round(safe_divide(view_item,nullif(page_view,0))*100,2) as drop_lp_product_page,
+
+            round(safe_divide(add_to_cart,nullif(view_item,0))*100,2) as add_to_cart_rate,
+            100- round(safe_divide(add_to_cart,nullif(view_item,0))*100,2) as drop_product_cart,
+
+            round(safe_divide(begin_checkout,nullif(add_to_cart,0))*100,2) as checkout_rate,
+            100-round(safe_divide(begin_checkout,nullif(add_to_cart,0))*100,2) as drop_cart_checkout,
+
+            round(safe_divide(purchase,nullif(begin_checkout,0))*100,2) as purchase_rate,
+            100 - round(safe_divide(purchase,nullif(begin_checkout,0))*100,2) as drop_checkout_purchase,
+
+            round(safe_divide(purchase,nullif(total_users,0))*100,2) as conversion_rate,
+
+            total_revenue,
+
+            round(safe_divide(total_revenue,nullif(purchase,0)),2) as AOV,
+
+            safe_divide(total_revenue,nullif(total_users,0)) as ARPU
+
+      from metric
+
+),
+
+bounce_session_duration as (
+    select
+       round(safe_divide(count(distinct session_id)-count(distinct case when session_engaged='1' then session_id end), 
+        count(distinct session_id))*100,2) as bounce_rate,
+
+       safe_divide(sum(engagment_time_mesc), 1000 * count(distinct session_id)) as avg_session_duration_sec
+from flat_data
+)
+
+select
+   m.total_users,
+   m.view_rate,
+   m.drop_lp_product_page,
+   m.add_to_cart_rate,
+   m.drop_product_cart,
+   m.checkout_rate,
+   m.drop_cart_checkout,
+   m.purchase_rate,
+   m.drop_checkout_purchase,
+   m.conversion_rate,
+   m.AOV,
+   m.ARPU,
+   b.bounce_rate,
+   b.avg_session_duration_sec
+
+from metric_cal m, bounce_session_duration b;

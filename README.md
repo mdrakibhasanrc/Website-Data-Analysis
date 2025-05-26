@@ -145,3 +145,131 @@ from metric_cal m, bounce_session_duration b;
       Bounce rate (32.8%) and session duration (70s) suggest room to improve site stickiness and engagement.
 
 
+## ✅ Funnel Analysis
+
+Funnel analysis shows how people move step by step on a website, from viewing a page to buying a product. It helps find where most users leave, so you can improve those parts and increase sales.
+
+ ```
+ -- Declare the start and end dates for the analysis period
+declare start_date date default '2020-11-01';  
+declare end_date date default '2021-01-31';
+
+
+with flat_data as (
+  
+  select
+   user_pseudo_id,
+   event_name,
+   event_date
+from `bigquery-public-data.ga4_obfuscated_sample_ecommerce.events_*`
+where event_name in ('page_view','view_item','add_to_cart','begin_checkout','purchase')
+ and parse_date('%Y%m%d', event_date) between start_date and end_date
+),
+
+metrics as (
+   select
+     count (distinct user_pseudo_id) as total_users,
+     count(distinct case when event_name='page_view' then user_pseudo_id end) as page_view,
+     count(distinct case when event_name='view_item' then user_pseudo_id end) as view_item,
+     count(distinct case when event_name='add_to_cart' then user_pseudo_id end) as add_to_cart,
+     count(distinct case when event_name='begin_checkout' then user_pseudo_id end) as begin_checkout,
+     count(distinct case when event_name='purchase' then user_pseudo_id end) as purchase
+  from flat_data
+),
+
+funnel_metrics as (
+      select 'page view' as step,
+           page_view as users,
+           NULL as funnel_rate,
+           NULL as drop_off
+      from metrics 
+
+      union all
+
+      select 'view product page',
+         view_item,
+         round(safe_divide(view_item,nullif(page_view,0))*100,2),
+         round(100-safe_divide(view_item,nullif(page_view,0))*100,2)
+      from metrics
+
+
+      union all
+
+           select 'Add to Cart',
+           add_to_cart,
+         round(safe_divide(add_to_cart,nullif(view_item,0))*100,2),
+         round(100-safe_divide(add_to_cart,nullif(view_item,0))*100,2)
+      from metrics
+
+
+       union all
+
+           select 'Begin Checkout',
+         begin_checkout,
+         round(safe_divide(begin_checkout,nullif(add_to_cart,0))*100,2),
+         round(100-safe_divide(begin_checkout,nullif(add_to_cart,0))*100,2)
+      from metrics
+
+
+       union all
+
+           select 'Purchase',
+         purchase,
+         round(safe_divide(purchase,nullif(begin_checkout,0))*100,2),
+         round(100-safe_divide(purchase,nullif(begin_checkout,0))*100,2)
+      from metrics
+
+)
+
+select
+   *
+from funnel_metrics
+order by users desc;
+ ```
+
+## 🎯 Query Result:
+
+![Screenshot_7](https://github.com/user-attachments/assets/0d77c543-9d4c-47ad-bbf6-e3e2b2cd278d)
+
+
+## 🎯 Summary Key Findings:
+
+
+             High initial drop-off after landing:
+            
+            Only 22.7% of users who viewed a page actually viewed a product.
+            
+            ⚠️ 77.3% dropped off between landing and product view — this suggests weak product discoverability or lack of user intent.
+            
+            
+            Significant drop from product view to cart:
+            
+            Only 20.48% of users who viewed a product added it to the cart.
+
+            ⚠️ 79.52% abandoned at this step — possible reasons include:
+            
+            Price hesitation
+            
+            Lack of trust or urgency
+            
+            Poor product descriptions or images
+            
+            
+            Checkout flow is strong:
+            
+            77.44% of users who added to cart started checkout.
+            
+            ✅ This indicates a healthy checkout initiation rate, meaning cart-level motivation is high.
+            
+            
+            Purchase completion is moderate:
+            
+            Only 45.49% of those who began checkout completed purchase.
+            
+            ⚠️ 54.51% dropped at final step — likely issues:
+            
+            Unexpected costs (shipping/taxes)
+            
+            Complex checkout
+            
+            Lack of payment options

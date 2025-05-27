@@ -1,0 +1,52 @@
+DECLARE start_date DATE DEFAULT '2020-11-01';
+DECLARE end_date DATE DEFAULT '2021-01-31';
+
+WITH user_events AS (
+  SELECT
+    user_pseudo_id,
+    ARRAY_AGG(event_name ORDER BY event_timestamp) AS events
+  FROM `bigquery-public-data.ga4_obfuscated_sample_ecommerce.events_*`
+  WHERE event_name IN ('page_view','view_item','add_to_cart','begin_checkout','purchase')
+    AND PARSE_DATE('%Y%m%d', event_date) BETWEEN start_date AND end_date
+  GROUP BY user_pseudo_id, device
+),
+
+funnel_flags AS (
+  SELECT
+    user_pseudo_id,
+    -- Check if the event exists using UNNEST
+    EXISTS(SELECT 1 FROM UNNEST(events) e WHERE e = 'page_view') AS did_page_view,
+    EXISTS(SELECT 1 FROM UNNEST(events) e WHERE e = 'view_item') AS did_view_item,
+    EXISTS(SELECT 1 FROM UNNEST(events) e WHERE e = 'add_to_cart') AS did_add_to_cart,
+    EXISTS(SELECT 1 FROM UNNEST(events) e WHERE e = 'begin_checkout') AS did_begin_checkout,
+    EXISTS(SELECT 1 FROM UNNEST(events) e WHERE e = 'purchase') AS did_purchase
+  FROM user_events
+),
+
+aggregated AS (
+  SELECT
+    COUNT(DISTINCT user_pseudo_id) AS total_users,
+    COUNTIF(did_page_view) AS step_page_view,
+    COUNTIF(did_page_view AND did_view_item) AS step_view_item,
+    COUNTIF(did_page_view AND did_view_item AND did_add_to_cart) AS step_add_to_cart,
+    COUNTIF(did_page_view AND did_view_item AND did_add_to_cart AND did_begin_checkout) AS step_begin_checkout,
+    COUNTIF(did_page_view AND did_view_item AND did_add_to_cart AND did_begin_checkout AND did_purchase) AS step_purchase
+  FROM funnel_flags
+)
+
+SELECT
+   total_users,
+  ROUND(SAFE_DIVIDE(step_view_item, step_page_view) * 100, 2) AS view_rate,
+  100 - ROUND(SAFE_DIVIDE(step_view_item, step_page_view) * 100, 2) AS drop_lp_product_page,
+
+  ROUND(SAFE_DIVIDE(step_add_to_cart, step_view_item) * 100, 2) AS add_to_cart_rate,
+  100 - ROUND(SAFE_DIVIDE(step_add_to_cart, step_view_item) * 100, 2) AS drop_product_cart,
+
+  ROUND(SAFE_DIVIDE(step_begin_checkout, step_add_to_cart) * 100, 2) AS checkout_rate,
+  100 - ROUND(SAFE_DIVIDE(step_begin_checkout, step_add_to_cart) * 100, 2) AS drop_cart_checkout,
+
+  ROUND(SAFE_DIVIDE(step_purchase, step_begin_checkout) * 100, 2) AS purchase_rate,
+  100 - ROUND(SAFE_DIVIDE(step_purchase, step_begin_checkout) * 100, 2) AS drop_checkout_purchase,
+
+  ROUND(SAFE_DIVIDE(step_purchase, total_users) * 100, 2) AS conversion_rate
+FROM aggregated;

@@ -273,3 +273,91 @@ order by users desc;
             Complex checkout
             
             Lack of payment options
+
+
+
+## ✅ Device Category By Funnel Analysis
+
+Funnel analysis shows how people move step by step on a website, from viewing a page to buying a product. It helps find where most users leave, so you can improve those parts and increase sales.
+
+ ```
+-- Declare the start and end dates for the analysis period
+declare start_date date default '2020-11-01';  
+declare end_date date default '2021-01-31';
+
+
+with flat_data as (
+ 
+ select
+  user_pseudo_id,
+  event_name,
+  event_date,
+  device.category as device
+from `bigquery-public-data.ga4_obfuscated_sample_ecommerce.events_*`
+where event_name in ('page_view','view_item','add_to_cart','begin_checkout','purchase')
+and parse_date('%Y%m%d', event_date) between start_date and end_date
+),
+
+metrics as (
+  select
+    device,
+    count (distinct user_pseudo_id) as total_users,
+    count(distinct case when event_name='page_view' then user_pseudo_id end) as page_view,
+    count(distinct case when event_name='view_item' then user_pseudo_id end) as view_item,
+    count(distinct case when event_name='add_to_cart' then user_pseudo_id end) as add_to_cart,
+    count(distinct case when event_name='begin_checkout' then user_pseudo_id end) as begin_checkout,
+    count(distinct case when event_name='purchase' then user_pseudo_id end) as purchase
+ from flat_data
+ group by device 
+),
+
+metrics_cal as (
+
+   select
+          device,
+           total_users,
+           round(safe_divide(view_item,nullif(page_view,0))*100,2) as view_rate,
+           100-round(safe_divide(view_item,nullif(page_view,0))*100,2) as drop_lp_product_page,
+
+           round(safe_divide(add_to_cart,nullif(view_item,0))*100,2) as add_to_cart_rate,
+           100- round(safe_divide(add_to_cart,nullif(view_item,0))*100,2) as drop_product_cart,
+
+           round(safe_divide(begin_checkout,nullif(add_to_cart,0))*100,2) as checkout_rate,
+           100-round(safe_divide(begin_checkout,nullif(add_to_cart,0))*100,2) as drop_cart_checkout,
+
+           round(safe_divide(purchase,nullif(begin_checkout,0))*100,2) as purchase_rate,
+           100 - round(safe_divide(purchase,nullif(begin_checkout,0))*100,2) as drop_checkout_purchase,
+
+           round(safe_divide(purchase,nullif(total_users,0))*100,2) as conversion_rate
+      from metrics
+)
+
+select
+    device,
+    view_rate,
+    drop_lp_product_page,
+    drop_product_cart,
+    drop_cart_checkout,
+    drop_checkout_purchase,
+    conversion_rate
+from metrics_cal
+    
+ ```
+
+## 🎯 Query Result:
+
+![Screenshot_1](https://github.com/user-attachments/assets/ee33b0dd-8d30-4ad3-baac-1604ad08f35d)
+
+
+
+## 🎯 Summary Key Findings:
+
+
+            Tablet users showed the highest initial engagement with the greatest view rate, but they experience significant drop-offs
+            when moving from the product page to the cart. This suggests potential usability or experience challenges on tablets during product selection.
+
+            Desktop users exhibited notable friction during the checkout stage, resulting in the highest drop-off rates before purchase. 
+            This highlights a critical area for optimization to reduce abandonment and improve desktop conversions.
+
+           Mobile users demonstrated the strongest conversion performance, achieving the highest conversion rate despite slightly higher early funnel drop-offs. This indicates an 
+           overall smoother purchase path on mobile devices, though there remains room to reduce initial drop-offs.
